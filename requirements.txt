@@ -1,0 +1,7 @@
+colorzero==2.0
+gpiozero==2.0.1
+lgpio==0.2.2.0
+pygame==2.6.0
+python-vlc==3.0.21203
+schedule==1.2.2
+tinydb==4.8.2
