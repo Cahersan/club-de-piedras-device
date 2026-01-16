@@ -1,0 +1,14 @@
+[Unit]
+Description=Piedra Service Example
+Wants=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/piedra.sh
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
