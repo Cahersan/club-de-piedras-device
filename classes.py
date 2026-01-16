@@ -15,7 +15,7 @@ pygame.mixer.init()
 
 
 class LEDHandler:
-    leds = LEDBoard(17, 27, 22, 23, 24, 25, 16, pwm=True)
+    leds = LEDBoard(16, 25, 24, 23, 22, 27, 17, pwm=True)
     led_num = 1
 
     def slow_blink(self, led_num, fade_time=1):
@@ -69,6 +69,16 @@ class Player:
         "chakra_meditation/06-Om.wav",
         "chakra_meditation/07-Am.wav",
     ]
+
+    # files = [
+    #     "cdp_audios/01-carbon.wav",
+    #     "cdp_audios/02-coral.wav",
+    #     "cdp_audios/03-estalagtita.wav",
+    #     "cdp_audios/04-goethita.wav",
+    #     "cdp_audios/05-olivo.wav",
+    #     "cdp_audios/06-volcanica.wav",
+    #     "cdp_audios/07-lapis.wav",
+    # ]
 
     sounds = [Sound(file) for file in files]
 

@@ -1,25 +1,19 @@
-from gpiozero import Button, LED
+from gpiozero import LEDBoard
+from itertools import chain
 from time import sleep
 
-# led_1 = LED(14)
-# led_2 = LED(15)
-# led_3 = LED(4)
-# led_4 = LED(17)
-# led_5 = LED(27)
-# led_6 = LED(22)
-# led_7 = LED(10)
+leds = LEDBoard(16, 25, 24, 23, 22, 27, 17, pwm=True)
 
-button = Button(10)
+def sweep_blink(times=3):
+    indices = [range(0, 7, 1), range(5, 0, -1)] * times
 
-# leds = [led_1, led_2, led_3, led_4, led_5, led_6, led_7]
+    for index in chain.from_iterable(indices):
+        leds[index].on()
+        sleep(0.04)
+        leds[index].off()
 
 while True:
-    # for led in leds:
-    #     led.on()
-    #     sleep(0.1)
-    #     led.off()
-
-    button.wait_for_press()
-    print("pressed!")
+    sweep_blink()
+    sleep(3)
 
     

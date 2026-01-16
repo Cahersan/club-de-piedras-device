@@ -1,7 +1,7 @@
 import time
 
 import schedule
-from gpiozero import Button
+from gpiozero import Button, MotionSensor
 from tinydb import TinyDB
 
 from classes import RockHandler
@@ -11,17 +11,15 @@ db = TinyDB("db.json", sort_keys=True, indent=4, separators=(",", ": "))
 
 Button.was_held = False
 
-button_1 = Button(5, bounce_time=0.1, hold_time=3)
-button_2 = Button(6, bounce_time=0.1)
+sensor = MotionSensor(5, active_state=False, pull_up=None)
 
 
 # Instantiate RockHandler
 rock_handler = RockHandler(db)
 
 # Assign actions to buttons
-button_1.when_released = rock_handler.btn_released
-button_1.when_held = rock_handler.finish_meditation
-button_2.when_pressed = rock_handler.next_day
+sensor.when_no_motion = rock_handler.start_meditation
+sensor.when_motion = rock_handler.stop_meditation
 
 rock_handler.initialize()
 rock_handler.led_handler.sweep_blink(times=5)
