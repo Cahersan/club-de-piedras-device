@@ -13,7 +13,6 @@ Button.was_held = False
 
 sensor = MotionSensor(5, active_state=False, pull_up=None)
 
-
 # Instantiate RockHandler
 rock_handler = RockHandler(db)
 

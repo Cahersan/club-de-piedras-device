@@ -5,7 +5,7 @@ from time import sleep
 
 import pygame.mixer
 from gpiozero import LEDBoard
-from pygame.mixer import Sound
+from pygame.mixer import music
 from tinydb import where
 from tinydb.table import Document
 
@@ -57,54 +57,48 @@ class LEDHandler:
 
 
 class Player:
-    # TODO: Lazy load these items.
-    # Read: https://medium.com/@codingmatheus/lazy-loading-in-python-99c44f416aa0
-
-    files = [
-        "chakra_meditation/01-Lam.wav",
-        "chakra_meditation/02-Vam.wav",
-        "chakra_meditation/03-Ram.wav",
-        "chakra_meditation/04-Yam.wav",
-        "chakra_meditation/05-Ham.wav",
-        "chakra_meditation/06-Om.wav",
-        "chakra_meditation/07-Am.wav",
-    ]
-
     # files = [
-    #     "cdp_audios/01-carbon.wav",
-    #     "cdp_audios/02-coral.wav",
-    #     "cdp_audios/03-estalagtita.wav",
-    #     "cdp_audios/04-goethita.wav",
-    #     "cdp_audios/05-olivo.wav",
-    #     "cdp_audios/06-volcanica.wav",
-    #     "cdp_audios/07-lapis.wav",
+    #     "chakra_meditation/01-Lam.wav",
+    #     "chakra_meditation/02-Vam.wav",
+    #     "chakra_meditation/03-Ram.wav",
+    #     "chakra_meditation/04-Yam.wav",
+    #     "chakra_meditation/05-Ham.wav",
+    #     "chakra_meditation/06-Om.wav",
+    #     "chakra_meditation/07-Am.wav",
     # ]
 
-    sounds = [Sound(file) for file in files]
+    files = [
+        "cdp_audios/01-carbon.wav",
+        "cdp_audios/02-coral.wav",
+        "cdp_audios/03-estalagtita.wav",
+        "cdp_audios/04-goethita.wav",
+        "cdp_audios/05-olivo.wav",
+        "cdp_audios/06-volcanica.wav",
+        "cdp_audios/07-lapis.wav",
+    ]
 
     file_num = 1
 
-    def play_file(self, file_num):
+    def play_sound(self, file_num):
         self.file_num = file_num % 8
-        sound = self.sounds[self.file_num - 1]
-        sound.play()
+        music.load(self.files[self.file_num - 1])
+        music.play()
         print(f"playing sound ({self.file_num}) {self.files[self.file_num - 1]}")
 
-    def stop_file(self, file_num):
-        self.file_num = file_num % 8
-        sound = self.sounds[self.file_num - 1]
-        sound.stop()
+    def stop_sound(self):
+        music.fadeout(1000)
+        music.unload()
         print(f"stopping sound ({self.file_num}) {self.files[self.file_num - 1]}")
 
     def play_next(self):
-        self.stop_file(self.file_num)
+        self.stop_sound()
         self.file_num += 1
-        self.play_file(self.file_num)
+        self.play_sound(self.file_num)
 
     def play_prev(self):
-        self.stop_file(self.file_num)
+        self.stop_sound()
         self.file_num -= 1
-        self.play_file(self.file_num)
+        self.play_sound(self.file_num)
 
 
 class RockHandler:
@@ -153,7 +147,7 @@ class RockHandler:
             self.d_id = self.journal_table.insert(asdict(DayData()))
             self.status_table.insert({"d_id": self.d_id})
 
-        # TODO: What happens if the device is off for several days?
+        #self.file_num TODO: What happens if the device is off for several days?
 
         # Load last registered day
         self.d_id = self.status_table.get(doc_id=1)["d_id"]
@@ -187,7 +181,7 @@ class RockHandler:
     def start_meditation(self):
         self.meditating = True
 
-        self.player.play_file(self.current_day.day_num)
+        self.player.play_sound(self.current_day.day_num)
         self.led_handler.slow_blink(self.current_day.day_num, fade_time=5)
 
         # Set up session in DB
@@ -202,7 +196,7 @@ class RockHandler:
 
     def stop_meditation(self):
         self.meditating = False
-        self.player.stop_file(self.current_day.day_num)
+        self.player.stop_sound()
 
         if self.current_day.done:
             self.led_handler.turn_on(self.current_day.day_num)
