@@ -82,6 +82,7 @@ class Player:
     def play_sound(self, file_num):
         self.file_num = file_num % 8
         music.load(self.files[self.file_num - 1])
+        music.set_volume(0.4)
         music.play()
         print(f"playing sound ({self.file_num}) {self.files[self.file_num - 1]}")
 
@@ -147,7 +148,7 @@ class RockHandler:
             self.d_id = self.journal_table.insert(asdict(DayData()))
             self.status_table.insert({"d_id": self.d_id})
 
-        #self.file_num TODO: What happens if the device is off for several days?
+        #TODO: What happens if the device is off for several days?
 
         # Load last registered day
         self.d_id = self.status_table.get(doc_id=1)["d_id"]
