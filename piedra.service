@@ -1,5 +1,5 @@
 [Unit]
-Description=Piedra Service Example
+Description=Piedra Service
 Wants=network.target
 After=syslog.target network-online.target
 

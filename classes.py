@@ -82,24 +82,15 @@ class Player:
     def play_sound(self, file_num):
         self.file_num = file_num % 8
         music.load(self.files[self.file_num - 1])
-        music.set_volume(0.4)
+        music.set_volume(0.1)
         music.play()
         print(f"playing sound ({self.file_num}) {self.files[self.file_num - 1]}")
+
 
     def stop_sound(self):
         music.fadeout(1000)
         music.unload()
         print(f"stopping sound ({self.file_num}) {self.files[self.file_num - 1]}")
-
-    def play_next(self):
-        self.stop_sound()
-        self.file_num += 1
-        self.play_sound(self.file_num)
-
-    def play_prev(self):
-        self.stop_sound()
-        self.file_num -= 1
-        self.play_sound(self.file_num)
 
 
 class RockHandler:
@@ -148,7 +139,7 @@ class RockHandler:
             self.d_id = self.journal_table.insert(asdict(DayData()))
             self.status_table.insert({"d_id": self.d_id})
 
-        #TODO: What happens if the device is off for several days?
+        # TODO: What happens if the device is off for several days?
 
         # Load last registered day
         self.d_id = self.status_table.get(doc_id=1)["d_id"]
@@ -174,11 +165,6 @@ class RockHandler:
 
         print("ready!")
 
-    def btn_released(self, btn):
-        if not btn.was_held:
-            self.toggle_meditation()
-        btn.was_held = False
-
     def start_meditation(self):
         self.meditating = True
 
@@ -199,6 +185,8 @@ class RockHandler:
         self.meditating = False
         self.player.stop_sound()
 
+        self.check_done()
+
         if self.current_day.done:
             self.led_handler.turn_on(self.current_day.day_num)
         else:
@@ -218,23 +206,12 @@ class RockHandler:
 
         print(f"Meditation stopped. Done={self.current_day.done}")
 
-    def finish_meditation(self, btn):
-        # TODO: This is a conveniency method attached to the When_held hook.
-        # and will probably not be needed in the final code.
-
-        btn.was_held = True  # Handles button hold
-        self.current_day.done = True
-
-        self.stop_meditation()
-
-    def toggle_meditation(self):
-        self.stop_meditation() if self.meditating else self.start_meditation()
-
     def check_done(self):
-        if self.meditating and not self.current_day.done:
-            if (datetime.now() - datetime.fromisoformat(self.current_session.isodatetime)) >= timedelta(minutes=5):
-                self.current_day.done = True
-                print("5 minutes passed, meditation done!")
+        if self.current_day.done:
+            return
+
+        if (datetime.now() - datetime.fromisoformat(self.current_session.isodatetime)) >= timedelta(minutes=5):
+            self.current_day.done = True
 
     def next_day(self):
         if self.meditating:
