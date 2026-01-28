@@ -68,13 +68,13 @@ class Player:
     # ]
 
     files = [
-        "cdp_audios/01-carbon.wav",
-        "cdp_audios/02-coral.wav",
-        "cdp_audios/03-estalagtita.wav",
-        "cdp_audios/04-goethita.wav",
-        "cdp_audios/05-olivo.wav",
-        "cdp_audios/06-volcanica.wav",
-        "cdp_audios/07-lapis.wav",
+        "audios_cdp/mp3/01-carbon.mp3",
+        "audios_cdp/mp3/02-coral.mp3",
+        "audios_cdp/mp3/03-estalagtita.mp3",
+        "audios_cdp/mp3/04-goethita.mp3",
+        "audios_cdp/mp3/05-olivo.mp3",
+        "audios_cdp/mp3/06-volcanica.mp3",
+        "audios_cdp/mp3/07-lapis.mp3",
     ]
 
     file_num = 1
