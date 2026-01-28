@@ -86,7 +86,6 @@ class Player:
         music.play()
         print(f"playing sound ({self.file_num}) {self.files[self.file_num - 1]}")
 
-
     def stop_sound(self):
         music.fadeout(1000)
         music.unload()
