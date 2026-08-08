@@ -1,10 +1,13 @@
+import board
+import neopixel
+
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from itertools import chain
 from time import sleep
 
 import pygame.mixer
-from gpiozero import LEDBoard
+
 from pygame.mixer import music
 from tinydb import where
 from tinydb.table import Document
@@ -14,46 +17,55 @@ from data_structures import DayData, SessionData
 pygame.mixer.init()
 
 
-class LEDHandler:
-    leds = LEDBoard(16, 25, 24, 23, 22, 27, 17, pwm=True)
-    led_num = 1
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+OFF = (0, 0, 0)
 
-    def slow_blink(self, led_num, fade_time=1):
-        self.led_num = led_num % 8
-        self.leds[self.led_num - 1].pulse(fade_time, fade_time)
+class PixelsHandler:
+    pixels = neopixel.NeoPixel(board.D10, 8, brightness=0.1, auto_write=False)
+    pixel_num = 1
 
-    def fast_blink(self, led_num):
-        self.led_num = led_num % 8
-        self.leds[self.led_num - 1].blink(0.1, 0.1, n=5)
+
+    def slow_blink(self, pixel_num, fade_time=1):
+        self.pixel_num = pixel_num % 8
+        self.pixels[self.pixel_num - 1].pulse(fade_time, fade_time)
+
+    def fast_blink(self, pixel_num):
+        self.pixel_num = pixel_num % 8
+        self.pixels[self.pixel_num - 1].blink(0.1, 0.1, n=5)
 
     def sweep_blink(self, times=3):
-        indices = [range(0, 7, 1), range(5, 0, -1)] * times
+        indices = [range(1, 9, 1), range(7, 1, -1)] * times
 
         for index in chain.from_iterable(indices):
-            self.leds[index].on()
+            self.turn_on(index)
             sleep(0.04)
-            self.leds[index].off()
+            self.turn_off(index)
 
     def clear(self):
-        self.leds.off()
+        self.pixels.fill(OFF)
+        self.pixels.show()
 
-    def turn_on(self, led_num):
-        self.led_num = led_num % 8
-        self.leds[self.led_num - 1].on()
+    def turn_on(self, pixel_num, color=GREEN):
+        pixel_num = (pixel_num - 1) %8
+        self.pixels[pixel_num] = color
+        self.pixels.show()
 
-    def turn_off(self, led_num):
-        self.led_num = led_num % 8
-        self.leds[self.led_num - 1].off()
+    def turn_off(self, pixel_num):
+        pixel_num = (pixel_num - 1) %8
+        self.pixels[pixel_num] = OFF
+        self.pixels.show()
 
     def move_next(self):
-        self.turn_off(self.led_num)
-        self.led_num += 1
-        self.turn_on(self.led_num)
+        self.turn_off(self.pixel_num)
+        self.pixel_num += 1
+        self.turn_on(self.pixel_num)
 
     def move_prev(self):
-        self.turn_off(self.led_num)
-        self.led_num -= 1
-        self.turn_on(self.led_num)
+        self.turn_off(self.pixel_num)
+        self.pixel_num -= 1
+        self.turn_on(self.pixel_num)
 
 
 class Player:
@@ -104,7 +116,7 @@ class RockHandler:
     s_id = None
     current_session = None
 
-    led_handler = None
+    pixels_handler = None
     player = None
 
     meditating = False
@@ -113,9 +125,9 @@ class RockHandler:
         self.db = db
 
     def initialize(self):
-        print("loading leds...")
-        self.led_handler = LEDHandler()
-        print("leds ready!")
+        print("loading pixels...")
+        self.pixels_handler = PixelsHandler()
+        print("pixels ready!")
 
         print("loading player...")
         self.player = Player()
@@ -123,7 +135,7 @@ class RockHandler:
 
     def load_state(self):
         print("loading state...")
-        self.led_handler.clear()
+        self.pixels_handler.clear()
         self.current_day = DayData()
 
         self.status_table = self.db.table("status")
@@ -153,14 +165,14 @@ class RockHandler:
             day_num = day["day_num"]
             done = day["done"]
             if done:
-                self.led_handler.turn_on(day_num)
+                self.pixels_handler.turn_on(day_num)
 
         # TODO: As of now, we assume the current day is the last day stored in the db
         self.current_day.day_num = day_num
         self.current_day.done = done
 
         if not done:
-            self.led_handler.slow_blink(self.current_day.day_num)
+            self.pixels_handler.slow_blink(self.current_day.day_num)
 
         print("ready!")
 
@@ -168,7 +180,7 @@ class RockHandler:
         self.meditating = True
 
         self.player.play_sound(self.current_day.day_num)
-        self.led_handler.slow_blink(self.current_day.day_num, fade_time=5)
+        self.pixels_handler.slow_blink(self.current_day.day_num, fade_time=5)
 
         # Set up session in DB
         self.current_session = SessionData()
@@ -187,9 +199,9 @@ class RockHandler:
         self.check_done()
 
         if self.current_day.done:
-            self.led_handler.turn_on(self.current_day.day_num)
+            self.pixels_handler.turn_on(self.current_day.day_num)
         else:
-            self.led_handler.slow_blink(self.current_day.day_num)
+            self.pixels_handler.slow_blink(self.current_day.day_num)
 
         # Update day and session in DB
         d_doc = Document({"done": self.current_day.done}, doc_id=self.d_id)
@@ -223,7 +235,7 @@ class RockHandler:
             return
 
         if not self.current_day.done:
-            self.led_handler.turn_off(self.current_day.day_num)
+            self.pixels_handler.turn_off(self.current_day.day_num)
 
         day_num = self.current_day.day_num + 1
         week_num = self.current_day.week_num
@@ -231,10 +243,10 @@ class RockHandler:
         if day_num > 7:
             day_num = 1
             week_num = self.current_day.week_num + 1
-            self.led_handler.clear()
+            self.pixels_handler.clear()
 
         self.current_day = DayData(week_num=week_num, day_num=day_num)
-        self.led_handler.slow_blink(self.current_day.day_num)
+        self.pixels_handler.slow_blink(self.current_day.day_num)
 
         # Set up next day in DB
         self.d_id = self.journal_table.insert(asdict(self.current_day))
