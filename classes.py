@@ -4,6 +4,7 @@ import neopixel
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from itertools import chain
+from rainbowio import colorwheel
 from time import sleep
 
 import pygame.mixer
@@ -20,22 +21,15 @@ pygame.mixer.init()
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 OFF = (0, 0, 0)
+SPEED = 200
 
 class PixelsHandler:
     pixels = neopixel.NeoPixel(board.D10, 8, brightness=0.1, auto_write=False)
     pixel_num = 1
 
-
-    def slow_blink(self, pixel_num, fade_time=1):
-        self.pixel_num = pixel_num % 8
-        self.pixels[self.pixel_num - 1].pulse(fade_time, fade_time)
-
-    def fast_blink(self, pixel_num):
-        self.pixel_num = pixel_num % 8
-        self.pixels[self.pixel_num - 1].blink(0.1, 0.1, n=5)
-
-    def sweep_blink(self, times=3):
+    def sweep(self, times=3):
         indices = [range(1, 9, 1), range(7, 1, -1)] * times
 
         for index in chain.from_iterable(indices):
@@ -43,29 +37,36 @@ class PixelsHandler:
             sleep(0.04)
             self.turn_off(index)
 
-    def clear(self):
-        self.pixels.fill(OFF)
-        self.pixels.show()
+    def rainbow_cycle(self, speed=SPEED):
+
+        for color in range(255):
+            for pixel in range(len(self.pixels)):
+                pixel_index = (pixel * 256 // len(self.pixels)) + color * 5
+                self.pixels[pixel] = colorwheel(pixel_index & 255)
+            self.pixels.show()
+            sleep(1/speed)
+
+    def rainbow(self, pixel_num, speed=SPEED):
+        pixel_num = (pixel_num - 1) % 8
+
+        for color in range(255):
+            self.pixels[pixel_num] = colorwheel(color & 255)
+            self.pixels.show()
+            sleep(1/speed)
 
     def turn_on(self, pixel_num, color=GREEN):
-        pixel_num = (pixel_num - 1) %8
+        pixel_num = (pixel_num - 1) % 8
         self.pixels[pixel_num] = color
         self.pixels.show()
 
     def turn_off(self, pixel_num):
-        pixel_num = (pixel_num - 1) %8
+        pixel_num = (pixel_num - 1) % 8
         self.pixels[pixel_num] = OFF
         self.pixels.show()
 
-    def move_next(self):
-        self.turn_off(self.pixel_num)
-        self.pixel_num += 1
-        self.turn_on(self.pixel_num)
-
-    def move_prev(self):
-        self.turn_off(self.pixel_num)
-        self.pixel_num -= 1
-        self.turn_on(self.pixel_num)
+    def clear(self):
+        self.pixels.fill(OFF)
+        self.pixels.show()
 
 
 class Player:
@@ -172,7 +173,7 @@ class RockHandler:
         self.current_day.done = done
 
         if not done:
-            self.pixels_handler.slow_blink(self.current_day.day_num)
+            self.pixels_handler.turn_on(self.current_day.day_num, color=YELLOW)
 
         print("ready!")
 
@@ -180,7 +181,7 @@ class RockHandler:
         self.meditating = True
 
         self.player.play_sound(self.current_day.day_num)
-        self.pixels_handler.slow_blink(self.current_day.day_num, fade_time=5)
+        self.pixels_handler.turn_on(self.current_day.day_num, color=BLUE)
 
         # Set up session in DB
         self.current_session = SessionData()
@@ -199,9 +200,9 @@ class RockHandler:
         self.check_done()
 
         if self.current_day.done:
-            self.pixels_handler.turn_on(self.current_day.day_num)
+            self.pixels_handler.turn_on(self.current_day.day_num, color=GREEN)
         else:
-            self.pixels_handler.slow_blink(self.current_day.day_num)
+            self.pixels_handler.turn_on(self.current_day.day_num, color=YELLOW)
 
         # Update day and session in DB
         d_doc = Document({"done": self.current_day.done}, doc_id=self.d_id)
@@ -246,7 +247,7 @@ class RockHandler:
             self.pixels_handler.clear()
 
         self.current_day = DayData(week_num=week_num, day_num=day_num)
-        self.pixels_handler.slow_blink(self.current_day.day_num)
+        self.pixels_handler.turn_on(self.current_day.day_num, color=YELLOW)
 
         # Set up next day in DB
         self.d_id = self.journal_table.insert(asdict(self.current_day))

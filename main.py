@@ -19,7 +19,7 @@ sensor.when_no_motion = rock_handler.start_meditation
 sensor.when_motion = rock_handler.stop_meditation
 
 rock_handler.initialize()
-rock_handler.led_handler.sweep_blink(times=5)
+rock_handler.pixels_handler.sweep(times=5)
 rock_handler.load_state()
 
 # Scheduled actions
