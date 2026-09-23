@@ -24,6 +24,7 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 OFF = (0, 0, 0)
 SPEED = 200
+DEFAULT_VOLUME = 0.1
 
 class PixelsHandler:
     pixels = neopixel.NeoPixel(board.D10, 8, brightness=0.1, auto_write=False)
@@ -92,12 +93,12 @@ class Player:
 
     file_num = 1
 
-    def play_sound(self, file_num):
+    def play_sound(self, file_num, volume=DEFAULT_VOLUME):
         self.file_num = file_num % 8
         music.load(self.files[self.file_num - 1])
-        music.set_volume(0.1)
+        music.set_volume(volume)
         music.play()
-        print(f"playing sound ({self.file_num}) {self.files[self.file_num - 1]}")
+        print(f"playing sound ({self.file_num}) {self.files[self.file_num - 1]} vol:{volume}")
 
     def stop_sound(self):
         music.fadeout(1000)
@@ -119,6 +120,7 @@ class RockHandler:
 
     pixels_handler = None
     player = None
+    volume = DEFAULT_VOLUME
 
     meditating = False
 
@@ -140,6 +142,7 @@ class RockHandler:
         if self.meditating:
             self.stop_meditation()
 
+        self.db.close()
         self.pixels_handler.clear()
         pygame.mixer.quit()
 
@@ -153,14 +156,14 @@ class RockHandler:
         self.status_table = self.db.table("status")
         self.journal_table = self.db.table("journal")
 
-        # Load status (last registered day ID) from DB
+        # Load status (last registered day ID and volume) from DB
         status = self.status_table.get(doc_id=1)
 
         # A missing status implies an empty DB that must be initialized
         if not (status):
             self.db.drop_tables()
             self.d_id = self.journal_table.insert(asdict(DayData()))
-            self.status_table.insert({"d_id": self.d_id})
+            self.status_table.insert({"d_id": self.d_id, "volume": DEFAULT_VOLUME})
 
         # TODO: What happens if the device is off for several days?
 
@@ -186,12 +189,18 @@ class RockHandler:
         if not done:
             self.pixels_handler.turn_on(self.current_day.day_num, color=YELLOW)
 
+        # Set volume
+        try:
+            self.volume = self.status_table.get(doc_id=1)["volume"]
+        except KeyError:
+            self.volume = DEFAULT_VOLUME
+
         print("ready!")
 
     def start_meditation(self):
         self.meditating = True
 
-        self.player.play_sound(self.current_day.day_num)
+        self.player.play_sound(self.current_day.day_num, self.volume)
         self.pixels_handler.turn_on(self.current_day.day_num, color=BLUE)
 
         # Set up session in DB
@@ -264,3 +273,26 @@ class RockHandler:
         self.d_id = self.journal_table.insert(asdict(self.current_day))
         self.status_table.upsert(Document({"d_id": self.d_id}, doc_id=1))
         print("Next day!")
+
+    def volume_up(self):
+        if self.meditating:
+            self.volume = min(self.volume + 0.01, 1.0)
+            music.set_volume(self.volume)
+            self.persist_volume()
+            print(f"volume up - current volume {self.volume}")
+        else:
+            # TODO: Add sound cue for volume reference, even when sound not playing
+            print("volume control only available when files are playing")
+
+    def volume_down(self):
+        if self.meditating:
+            self.volume = max(self.volume - 0.01, 0.0)
+            music.set_volume(self.volume)
+            self.persist_volume()
+            print(f"volume down - current volume {self.volume}")
+        else:
+            # TODO: Add sound cue for volume reference, even when sound not playing
+            print("volume control only available when files are playing")
+
+    def persist_volume(self):
+        self.status_table.upsert(Document({"volume": self.volume}, doc_id=1))
