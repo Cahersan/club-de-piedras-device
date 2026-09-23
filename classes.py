@@ -134,6 +134,17 @@ class RockHandler:
         self.player = Player()
         print("player ready!")
 
+    def shutdown(self):
+        print("shutting down...")
+
+        if self.meditating:
+            self.stop_meditation()
+
+        self.pixels_handler.clear()
+        pygame.mixer.quit()
+
+        print("shutdown complete.")
+
     def load_state(self):
         print("loading state...")
         self.pixels_handler.clear()

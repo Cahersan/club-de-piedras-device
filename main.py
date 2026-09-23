@@ -25,9 +25,23 @@ rock_handler.load_state()
 # Scheduled actions
 schedule.every().day.at("00:00").do(rock_handler.next_day)
 
-while True:
-    # Scheduled date change actions
-    schedule.run_pending()
 
-    # Run these actions every 5 minutes
-    time.sleep(300)
+def run_schedule():
+    while True:
+        # Scheduled date change actions
+        schedule.run_pending()
+
+        # Run these actions every 5 minutes
+        time.sleep(300)
+
+def shutdown():
+    rock_handler.shutdown()
+    sensor.close()
+    db.close()
+
+try:
+    run_schedule()
+except KeyboardInterrupt:
+    pass
+finally:
+    shutdown()
